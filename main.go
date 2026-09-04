@@ -13,13 +13,14 @@ import (
 )
 
 type Game struct {
-	GECKO_IMAGE  *ebiten.Image
-	TONGUE_IMAGE *ebiten.Image
-	FLY_IMAGE    *ebiten.Image
-	keys         []ebiten.Key
-	player       Gecko
-	flies        []Fly
-	frameCount   int
+	GECKO_IMAGE      *ebiten.Image
+	GECKO_ARMS_IMAGE *ebiten.Image
+	TONGUE_IMAGE     *ebiten.Image
+	FLY_IMAGE        *ebiten.Image
+	keys             []ebiten.Key
+	player           Gecko
+	flies            []Fly
+	frameCount       int
 
 	windowWidth  int
 	windowHeight int
@@ -51,7 +52,7 @@ type Fly struct {
 func (g *Game) SpawnNpcs() {
 	if rand.IntN(2) == 0 {
 		print("Spawned a fly")
-		g.flies = append(g.flies, Fly{Position{positionX: float64(rand.IntN(g.layoutWidth)), positionY: float64(g.layoutHeight) - 40}})
+		g.flies = append(g.flies, Fly{Position{positionX: float64(rand.IntN(g.layoutWidth)), positionY: 40}})
 	} else {
 		print("Spanwed a rock")
 	}
@@ -118,7 +119,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(background)
 
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-40)
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(g.GECKO_ARMS_IMAGE.Bounds().Dx())/2, float64(g.layoutHeight)-float64(g.GECKO_ARMS_IMAGE.Bounds().Dy()))
+	screen.DrawImage(g.GECKO_ARMS_IMAGE, &opts)
+
+	opts = ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-float64(g.GECKO_IMAGE.Bounds().Dy()))
 	screen.DrawImage(g.GECKO_IMAGE, &opts)
 
 	for _, fly := range g.flies {
@@ -139,7 +144,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
-	geckoImage, _, err := ebitenutil.NewImageFromFile("assets/gecko.png")
+	geckoImage, _, err := ebitenutil.NewImageFromFile("assets/gecko_body.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	geckoArmsImage, _, err := ebitenutil.NewImageFromFile("assets/gecko_arms.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,11 +168,12 @@ func main() {
 	windowHeight := 640
 
 	game := Game{
-		GECKO_IMAGE:  geckoImage,
-		TONGUE_IMAGE: tongueImage,
-		FLY_IMAGE:    flyImage,
-		player:       Gecko{speed: 3, maxLength: float64(windowHeight/2) - 80, tongueSpeed: 8},
-		frameCount:   120,
+		GECKO_IMAGE:      geckoImage,
+		TONGUE_IMAGE:     tongueImage,
+		GECKO_ARMS_IMAGE: geckoArmsImage,
+		FLY_IMAGE:        flyImage,
+		player:           Gecko{speed: 3, maxLength: float64(windowHeight/2) - 80, tongueSpeed: 8},
+		frameCount:       120,
 
 		windowWidth:  windowWidth,
 		windowHeight: windowHeight,
