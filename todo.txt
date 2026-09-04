@@ -1,0 +1,24 @@
+- [ ] Gecko
+    - [X] Move Left and Right
+    - [X] Cannot leave the screen
+    - [ ] Reset the Game on Collision
+    - [X] Spit its tongue out
+    - [X] Gecko Sprite
+    - [ ] Gecko Animation
+        - [ ] Run
+        - [ ] Mouth Open
+        - [X] Tongue out
+        - [ ] Dead
+- [ ] Fly
+    - [ ] Give points when collected by tongue
+    - [ ] Move down as gecko climbs
+    - [ ] Fly Sprite
+    - [ ] Fly Animation
+        - [ ] Fly
+        - [ ] Dead
+- [ ] Rocks
+    - [ ] Reset if collide with Gecko
+    - [ ] Rock Sprite
+- [ ] UI
+    - [ ] Score
+    - [ ] Press to Start Button
