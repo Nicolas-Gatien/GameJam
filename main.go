@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"math/rand/v2"
 	"slices"
 
@@ -119,7 +120,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(background)
 
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(g.GECKO_ARMS_IMAGE.Bounds().Dx())/2, float64(g.layoutHeight)-float64(g.GECKO_ARMS_IMAGE.Bounds().Dy()))
+	opts.GeoM.Rotate(math.Sin(float64(g.frameCount)))
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(g.GECKO_ARMS_IMAGE.Bounds().Dx())/2, float64(g.layoutHeight)-float64(g.GECKO_ARMS_IMAGE.Bounds().Dy()+55))
 	screen.DrawImage(g.GECKO_ARMS_IMAGE, &opts)
 
 	opts = ebiten.DrawImageOptions{}
