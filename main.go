@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"slices"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -22,6 +23,8 @@ type Game struct {
 	framesBtwSpawn       int
 	framesUntilNextSpawn int
 	frameCount           int
+	score                int
+	flyspeed             float64
 
 	windowWidth  int
 	windowHeight int
@@ -94,6 +97,7 @@ func (g *Game) CollisionCheck() error {
 		if fly.positionX >= xStart && fly.positionX <= xEnd {
 			if fly.positionY <= yStart && fly.positionY >= yEnd {
 				g.flies = slices.Delete(g.flies, index, index+1)
+				g.score += 1
 				print(g.flies)
 				// print("DEAD FLY!!!")
 			}
@@ -109,12 +113,19 @@ func (g *Game) Update() error {
 	if g.framesUntilNextSpawn <= 0 {
 		g.SpawnNpcs()
 		g.framesUntilNextSpawn = g.framesBtwSpawn
+		g.framesBtwSpawn -= 1
+		g.flyspeed += 0.25
 	}
 
-	for i, _ := range g.flies {
+	for i, fly := range g.flies {
 		g.flies[i].positionY += 0.5
-		// g.flies[i].positionX = g.flies[i].positionX + (math.Sin(float64(g.frameCount)/10) * 15)
-
+		g.flies[i].positionX = g.flies[i].positionX + (math.Sin(float64(g.frameCount)/10) * 2)
+		if fly.positionY >= float64(g.layoutHeight) {
+			g.score = 0
+			g.flyspeed = 0.5
+			g.framesBtwSpawn = 180
+			g.flies[i].positionY = 0
+		}
 	}
 
 	geckoBounds := g.player.SPRITE.Bounds()
@@ -161,11 +172,14 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+
 	geckoBounds := g.player.SPRITE.Bounds()
 	geckoWidth := geckoBounds.Dx()
 
 	background := color.RGBA{172, 220, 215, 0xff}
 	screen.Fill(background)
+
+	ebitenutil.DebugPrint(screen, strconv.Itoa(g.score))
 
 	tongue := g.player.TONGUE_SPRITE
 	tongueOptions := ebiten.DrawImageOptions{}
@@ -245,7 +259,7 @@ func main() {
 		ARMS_SPRITE:   geckoArmsImage,
 		LEGS_SPRITE:   geckoLegsImage,
 		speed:         3,
-		maxLength:     float64(windowHeight/2) - 80,
+		maxLength:     float64(windowHeight/2) - 100,
 		tongueSpeed:   8,
 		Position:      Position{float64(windowWidth) / 4, float64(windowHeight)/2 - 80},
 	}
@@ -255,6 +269,7 @@ func main() {
 		player:         player,
 		frameCount:     0,
 		framesBtwSpawn: 180,
+		flyspeed:       0.5,
 
 		windowWidth:  windowWidth,
 		windowHeight: windowHeight,
@@ -266,7 +281,7 @@ func main() {
 	}
 
 	ebiten.SetWindowSize(game.windowWidth, game.windowHeight)
-	ebiten.SetWindowTitle("Hello Nico I see you ")
+	ebiten.SetWindowTitle("Gecko Game")
 
 	err = ebiten.RunGame(&game)
 
