@@ -165,18 +165,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opts := ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(-float64(g.player.ARMS_SPRITE.Bounds().Dx())/2, -float64(g.player.ARMS_SPRITE.Bounds().Dy()/2))
-	opts.GeoM.Rotate(math.Sin(float64(g.frameCount)/3) / 2)
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX, float64(g.layoutHeight)-68)
+	if !g.player.attacking {
+		opts.GeoM.Rotate(math.Sin(float64(g.frameCount)/3) / 2)
+	}
+	opts.GeoM.Translate(g.player.positionX, float64(g.layoutHeight)-68)
 	screen.DrawImage(g.player.ARMS_SPRITE, &opts)
 
 	opts = ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(-float64(g.player.LEGS_SPRITE.Bounds().Dx())/2, -float64(g.player.LEGS_SPRITE.Bounds().Dy()/2))
-	opts.GeoM.Rotate(-math.Sin(float64(g.frameCount)/3) / 2)
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX, float64(g.layoutHeight)-48)
+	if !g.player.attacking {
+		opts.GeoM.Rotate(-math.Sin(float64(g.frameCount)/3) / 2)
+	}
+	opts.GeoM.Translate(g.player.positionX, float64(g.layoutHeight)-48)
 	screen.DrawImage(g.player.LEGS_SPRITE, &opts)
 
 	opts = ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-float64(g.player.SPRITE.Bounds().Dy()))
+	opts.GeoM.Translate(g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-float64(g.player.SPRITE.Bounds().Dy()))
 	screen.DrawImage(g.player.SPRITE, &opts)
 
 	for _, fly := range g.flies {
@@ -228,6 +232,7 @@ func main() {
 		speed:         3,
 		maxLength:     float64(windowHeight/2) - 80,
 		tongueSpeed:   8,
+		Position:      Position{float64(windowWidth) / 4, float64(windowHeight)/2 - 80},
 	}
 
 	game := Game{
@@ -241,8 +246,8 @@ func main() {
 		layoutWidth:  windowWidth / 2,
 		layoutHeight: windowHeight / 2,
 
-		leftOutBoundLimit:  -(windowWidth / 4),
-		rightOutBoundLimit: (windowWidth / 4),
+		leftOutBoundLimit:  0,
+		rightOutBoundLimit: (windowWidth / 2),
 	}
 
 	ebiten.SetWindowSize(game.windowWidth, game.windowHeight)
