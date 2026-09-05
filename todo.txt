@@ -5,18 +5,19 @@
     - [X] Spit its tongue out
     - [X] Gecko Sprite
     - [ ] Gecko Animation
-        - [ ] Run
-        - [ ] Mouth Open
+        - [X] Run
         - [X] Tongue out
         - [ ] Dead
 - [ ] Fly
+    - [X] Spawn Flies
     - [ ] Give points when collected by tongue
-    - [ ] Move down as gecko climbs
+    - [X] Move down as gecko climbs
     - [ ] Fly Sprite
     - [ ] Fly Animation
         - [ ] Fly
         - [ ] Dead
 - [ ] Rocks
+    - [X] Spawn Rocks
     - [ ] Reset if collide with Gecko
     - [ ] Rock Sprite
 - [ ] UI

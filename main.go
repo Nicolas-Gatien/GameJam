@@ -14,14 +14,14 @@ import (
 )
 
 type Game struct {
-	GECKO_IMAGE      *ebiten.Image
-	GECKO_ARMS_IMAGE *ebiten.Image
-	TONGUE_IMAGE     *ebiten.Image
-	FLY_IMAGE        *ebiten.Image
-	keys             []ebiten.Key
-	player           Gecko
-	flies            []Fly
-	frameCount       int
+	FLY_SPRITE           *ebiten.Image
+	keys                 []ebiten.Key
+	player               Gecko
+	flies                []Fly
+	rocks                []Rock
+	framesBtwSpawn       int
+	framesUntilNextSpawn int
+	frameCount           int
 
 	windowWidth  int
 	windowHeight int
@@ -38,45 +38,82 @@ type Position struct {
 }
 
 type Gecko struct {
-	positionX    float64
-	speed        float64
-	tongueLength float64
-	maxLength    float64
-	tongueSpeed  float64
-	attacking    bool
+	Position
+	SPRITE        *ebiten.Image
+	ARMS_SPRITE   *ebiten.Image
+	LEGS_SPRITE   *ebiten.Image
+	TONGUE_SPRITE *ebiten.Image
+	speed         float64
+	tongueLength  float64
+	tongue        Position
+	maxLength     float64
+	tongueSpeed   float64
+	attacking     bool
 }
 
 type Fly struct {
 	Position
 }
 
+type Rock struct {
+}
+
 func (g *Game) SpawnNpcs() {
-	if rand.IntN(2) == 0 {
-		print("Spawned a fly")
-		g.flies = append(g.flies, Fly{Position{positionX: float64(rand.IntN(g.layoutWidth)), positionY: 40}})
+	min := 10
+	max := g.layoutWidth - 30
+
+	if rand.IntN(1) == 0 {
+		flyPositionX := float64(rand.IntN(max-min+1) + min)
+
+		g.flies = append(g.flies, Fly{Position{positionX: flyPositionX, positionY: 0}})
+		fmt.Printf("Spawned a fly: %f\n", flyPositionX)
+
 	} else {
-		print("Spanwed a rock")
+		print("Spanwed a rock\n")
 	}
 
 }
 
-func (g *Game) Update() error {
+func (g *Game) CollisionCheck() error {
+	xStart := g.player.tongue.positionX
+	yStart := g.player.tongue.positionY
 
-	g.frameCount += 1
-	if g.frameCount == 180 {
-		g.SpawnNpcs()
-		g.frameCount = 0
+	xBound := g.player.TONGUE_SPRITE.Bounds().Dx()
+	yBound := g.player.TONGUE_SPRITE.Bounds().Dy()
+
+	xEnd := xStart + float64(xBound)
+	yEnd := yStart + float64(yBound)
+
+	for _, fly := range g.flies {
+		if fly.positionX >= xStart && fly.positionX <= xEnd {
+			if fly.positionY >= yStart && fly.positionY <= yEnd {
+				print("DEAD FLY!!!")
+			}
+		}
 	}
 
-	geckoBounds := g.GECKO_IMAGE.Bounds()
-	geckoWidth := geckoBounds.Dx()
-	geckoHeight := geckoBounds.Dy()
+	return nil
+}
 
-	fmt.Printf("Gecko Width: %d, Gecko Height: %d\n", geckoWidth, geckoHeight)
+func (g *Game) Update() error {
+	g.frameCount += 1
+	g.framesUntilNextSpawn -= 1
+	if g.framesUntilNextSpawn <= 0 {
+		g.SpawnNpcs()
+		g.framesUntilNextSpawn = g.framesBtwSpawn
+	}
+
+	for i, _ := range g.flies {
+		g.flies[i].positionY += 1
+	}
+
+	geckoBounds := g.player.SPRITE.Bounds()
+	geckoWidth := geckoBounds.Dx()
+	// geckoHeight := geckoBounds.Dy()
+
+	// fmt.Printf("Gecko Width: %d, Gecko Height: %d\n", geckoWidth, geckoHeight)
 
 	g.keys = inpututil.AppendPressedKeys(g.keys[:0])
-
-	fmt.Println(g.player.positionX)
 
 	if g.player.attacking == false {
 		if slices.Contains(g.keys, ebiten.KeyA) {
@@ -98,6 +135,7 @@ func (g *Game) Update() error {
 	}
 
 	if g.player.attacking {
+		g.CollisionCheck()
 		if g.player.tongueLength < g.player.maxLength {
 			g.player.tongueLength += g.player.tongueSpeed
 		}
@@ -113,32 +151,40 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	geckoBounds := g.GECKO_IMAGE.Bounds()
+	geckoBounds := g.player.SPRITE.Bounds()
 	geckoWidth := geckoBounds.Dx()
 
 	background := color.RGBA{172, 220, 215, 0xff}
 	screen.Fill(background)
 
+	tongue := g.player.TONGUE_SPRITE
+	tongueOptions := ebiten.DrawImageOptions{}
+	tongueOptions.GeoM.Scale(1, -g.player.tongueLength)
+	tongueOptions.GeoM.Translate(g.player.positionX-float64(g.player.TONGUE_SPRITE.Bounds().Dx()/2), g.player.positionY)
+	screen.DrawImage(tongue, &tongueOptions)
+
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Rotate(math.Sin(float64(g.frameCount)))
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(g.GECKO_ARMS_IMAGE.Bounds().Dx())/2, float64(g.layoutHeight)-float64(g.GECKO_ARMS_IMAGE.Bounds().Dy()+55))
-	screen.DrawImage(g.GECKO_ARMS_IMAGE, &opts)
+	opts.GeoM.Translate(-float64(g.player.ARMS_SPRITE.Bounds().Dx())/2, -float64(g.player.ARMS_SPRITE.Bounds().Dy()/2))
+	opts.GeoM.Rotate(math.Sin(float64(g.frameCount)/3) / 2)
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX, float64(g.layoutHeight)-68)
+	screen.DrawImage(g.player.ARMS_SPRITE, &opts)
 
 	opts = ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-float64(g.GECKO_IMAGE.Bounds().Dy()))
-	screen.DrawImage(g.GECKO_IMAGE, &opts)
+	opts.GeoM.Translate(-float64(g.player.LEGS_SPRITE.Bounds().Dx())/2, -float64(g.player.LEGS_SPRITE.Bounds().Dy()/2))
+	opts.GeoM.Rotate(-math.Sin(float64(g.frameCount)/3) / 2)
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX, float64(g.layoutHeight)-48)
+	screen.DrawImage(g.player.LEGS_SPRITE, &opts)
+
+	opts = ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(geckoWidth)/2, float64(g.layoutHeight)-float64(g.player.SPRITE.Bounds().Dy()))
+	screen.DrawImage(g.player.SPRITE, &opts)
 
 	for _, fly := range g.flies {
 		flyOptions := ebiten.DrawImageOptions{}
-		flyOptions.GeoM.Translate(fly.positionX, fly.positionY)
-		screen.DrawImage(g.FLY_IMAGE, &flyOptions)
+		flyOptions.GeoM.Translate(fly.positionX+(math.Sin(float64(g.frameCount)/10)*15), fly.positionY)
+		screen.DrawImage(g.FLY_SPRITE, &flyOptions)
 	}
 
-	tongue := g.TONGUE_IMAGE
-	tongueOptions := ebiten.DrawImageOptions{}
-	tongueOptions.GeoM.Scale(1, -g.player.tongueLength)
-	tongueOptions.GeoM.Translate(float64(g.layoutWidth/2)+g.player.positionX-float64(g.TONGUE_IMAGE.Bounds().Dx()/2), float64(g.layoutHeight)-40)
-	screen.DrawImage(tongue, &tongueOptions)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -156,6 +202,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	geckoLegsImage, _, err := ebitenutil.NewImageFromFile("assets/gecko_legs.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tongueImage, _, err := ebitenutil.NewImageFromFile("assets/tongue.png")
 	if err != nil {
 		log.Fatal(err)
@@ -169,13 +220,21 @@ func main() {
 	windowWidth := 480
 	windowHeight := 640
 
+	player := Gecko{
+		SPRITE:        geckoImage,
+		TONGUE_SPRITE: tongueImage,
+		ARMS_SPRITE:   geckoArmsImage,
+		LEGS_SPRITE:   geckoLegsImage,
+		speed:         3,
+		maxLength:     float64(windowHeight/2) - 80,
+		tongueSpeed:   8,
+	}
+
 	game := Game{
-		GECKO_IMAGE:      geckoImage,
-		TONGUE_IMAGE:     tongueImage,
-		GECKO_ARMS_IMAGE: geckoArmsImage,
-		FLY_IMAGE:        flyImage,
-		player:           Gecko{speed: 3, maxLength: float64(windowHeight/2) - 80, tongueSpeed: 8},
-		frameCount:       120,
+		FLY_SPRITE:     flyImage,
+		player:         player,
+		frameCount:     0,
+		framesBtwSpawn: 180,
 
 		windowWidth:  windowWidth,
 		windowHeight: windowHeight,
