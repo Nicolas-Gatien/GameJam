@@ -75,19 +75,27 @@ func (g *Game) SpawnNpcs() {
 }
 
 func (g *Game) CollisionCheck() error {
-	xStart := g.player.tongue.positionX
+
+	// print("CHECKING FOR COLLISION")
+
+	xStart := g.player.tongue.positionX - 6
 	yStart := g.player.tongue.positionY
 
-	xBound := g.player.TONGUE_SPRITE.Bounds().Dx()
-	yBound := g.player.TONGUE_SPRITE.Bounds().Dy()
+	xBound := g.player.TONGUE_SPRITE.Bounds().Dx() * 3
+	// yBound := g.player.TONGUE_SPRITE.Bounds().Dy()
 
 	xEnd := xStart + float64(xBound)
-	yEnd := yStart + float64(yBound)
+	yEnd := yStart - g.player.tongueLength
 
-	for _, fly := range g.flies {
+	for index, fly := range g.flies {
+		// fmt.Printf("xStart: %f, xEnd: %f, FlyX: %f \n", xStart, xEnd, fly.positionX)
+		// fmt.Printf("yStart: %f, yEnd: %f, FlyY: %f \n", yStart, yEnd, fly.positionY)
+
 		if fly.positionX >= xStart && fly.positionX <= xEnd {
-			if fly.positionY >= yStart && fly.positionY <= yEnd {
-				print("DEAD FLY!!!")
+			if fly.positionY <= yStart && fly.positionY >= yEnd {
+				g.flies = slices.Delete(g.flies, index, index+1)
+				print(g.flies)
+				// print("DEAD FLY!!!")
 			}
 		}
 	}
@@ -104,7 +112,9 @@ func (g *Game) Update() error {
 	}
 
 	for i, _ := range g.flies {
-		g.flies[i].positionY += 1
+		g.flies[i].positionY += 0.5
+		// g.flies[i].positionX = g.flies[i].positionX + (math.Sin(float64(g.frameCount)/10) * 15)
+
 	}
 
 	geckoBounds := g.player.SPRITE.Bounds()
@@ -159,8 +169,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	tongue := g.player.TONGUE_SPRITE
 	tongueOptions := ebiten.DrawImageOptions{}
+
 	tongueOptions.GeoM.Scale(1, -g.player.tongueLength)
-	tongueOptions.GeoM.Translate(g.player.positionX-float64(g.player.TONGUE_SPRITE.Bounds().Dx()/2), g.player.positionY)
+
+	g.player.tongue.positionX = g.player.positionX - float64(g.player.TONGUE_SPRITE.Bounds().Dx()/2)
+	g.player.tongue.positionY = g.player.positionY
+
+	tongueOptions.GeoM.Translate(g.player.tongue.positionX, g.player.tongue.positionY)
 	screen.DrawImage(tongue, &tongueOptions)
 
 	opts := ebiten.DrawImageOptions{}
@@ -185,7 +200,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, fly := range g.flies {
 		flyOptions := ebiten.DrawImageOptions{}
-		flyOptions.GeoM.Translate(fly.positionX+(math.Sin(float64(g.frameCount)/10)*15), fly.positionY)
+		flyOptions.GeoM.Translate(fly.positionX-8, fly.positionY-8)
 		screen.DrawImage(g.FLY_SPRITE, &flyOptions)
 	}
 
